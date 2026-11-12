@@ -1,0 +1,34 @@
+name: CheckStock checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: checkstock
+          POSTGRES_PASSWORD: checkstock-test-only
+          POSTGRES_DB: checkstock_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U checkstock -d checkstock_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DATABASE_URL: postgresql+psycopg://checkstock:checkstock-test-only@localhost:5432/checkstock_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - run: pip install -r requirements.lock
+      - run: python -m pytest -q
+      - name: Validate JavaScript
+        run: node --check app/static/app.js

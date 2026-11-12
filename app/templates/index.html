@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#173c34" />
+    <title>CheckStock — где сейчас товар?</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/app.css" />
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body>
+    <svg class="icon-defs" aria-hidden="true">
+      <defs>
+        <symbol id="i-grid" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+          <path d="M4 8h15m-5-5 5 5-5 5M20 16H5m5-5-5 5 5 5" />
+        </symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </symbol>
+        <symbol id="i-warehouse" viewBox="0 0 24 24">
+          <path d="m3 9 9-6 9 6v12H3ZM7 21V11h10v10M7 15h10M7 18h10" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m16 16 4 4" />
+        </symbol>
+        <symbol id="i-box" viewBox="0 0 24 24">
+          <path d="m3 7 9-4 9 4-9 4ZM3 7v10l9 4 9-4V7M12 11v10M7 5l10 4" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <path d="m5 12 4 4L19 6" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24">
+          <path d="m6 6 12 12M18 6 6 18" />
+        </symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24">
+          <path d="m9 5 7 7-7 7" />
+        </symbol>
+        <symbol id="i-truck" viewBox="0 0 24 24">
+          <path d="M2 5h12v12H2ZM14 9h4l4 5v3h-8" />
+          <circle cx="6" cy="18" r="2" />
+          <circle cx="18" cy="18" r="2" />
+        </symbol>
+        <symbol id="i-down" viewBox="0 0 24 24">
+          <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
+        </symbol>
+      </defs>
+    </svg>
+    <aside class="sidebar">
+      <a class="brand" href="#stock" aria-label="CheckStock — остатки"
+        ><span class="brand-mark"
+          ><svg class="icon"><use href="#i-box" /></svg></span
+        >checkstock<span class="brand-dot">.</span></a
+      >
+      <div class="sidebar-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+      <nav aria-label="Основная навигация">
+        <a href="#stock" class="nav-item active" data-view="stock"
+          ><svg class="icon"><use href="#i-grid" /></svg>Остатки<span
+            class="nav-count"
+            id="sku-count"
+            >3</span
+          ></a
+        >
+        <a
+          href="#documents"
+          class="nav-item"
+          data-view="documents"
+          aria-label="Отправки и перемещения"
+          title="Отправки и перемещения"
+          ><svg class="icon"><use href="#i-arrow" /></svg
+          ><span>Отправки и<br />перемещения</span
+          ><span id="pending-count" class="nav-count"></span
+        ></a>
+        <a href="#history" class="nav-item" data-view="history"
+          ><svg class="icon"><use href="#i-clock" /></svg>История</a
+        >
+        <a href="#warehouses" class="nav-item" data-view="warehouses"
+          ><svg class="icon"><use href="#i-warehouse" /></svg>Склады</a
+        >
+      </nav>
+      <div class="sidebar-note">
+        <span class="live-dot"></span> Всё на своих местах
+        <p>От склада до клиента.<br />Одна понятная картина.</p>
+      </div>
+      <div class="store-switch">
+        <span class="store-avatar">ДМ</span>
+        <div>
+          <strong>Демо-магазин</strong><small>Рабочее пространство</small>
+        </div>
+        <span class="store-lock">01</span>
+      </div>
+    </aside>
+    <main>
+      <div class="topbar">
+        <div>
+          <span class="breadcrumb">Рабочее пространство</span
+          ><span class="breadcrumb-slash">/</span
+          ><span id="breadcrumb-current">Остатки</span>
+        </div>
+        <div class="topbar-right">
+          <span id="updated-time">Загружаем данные…</span
+          ><button
+            class="icon-button"
+            id="refresh"
+            aria-label="Обновить данные"
+            title="Обновить данные"
+          >
+            ↻</button
+          ><span class="user-avatar">CS</span>
+        </div>
+      </div>
+      <div class="page">
+        <header class="page-header">
+          <div>
+            <div class="eyebrow" id="page-eyebrow">
+              ТОЧНОСТЬ В КАЖДОЙ ЕДИНИЦЕ
+            </div>
+            <h1 id="page-title">Остатки под контролем<span>.</span></h1>
+            <p id="page-description">
+              Где товар, сколько свободно и что уже отправлено.
+            </p>
+          </div>
+          <button class="button primary" id="new-operation">
+            <svg class="icon"><use href="#i-plus" /></svg>Новая операция
+          </button>
+        </header>
+        <div id="load-error" class="error-banner" role="alert" hidden></div>
+        <div id="loading" class="loading-state">
+          <div class="loading-line"></div>
+          <p>Сверяем остатки и историю операций…</p>
+        </div>
+        <div id="workspace" hidden>
+          <section id="view-stock" class="view">
+            <div class="metrics" id="metrics"></div>
+            <div class="locations-panel">
+              <div class="locations-heading">
+                <div>
+                  <span class="section-kicker">КАРТА ТОВАРА</span>
+                  <h2>Каждая единица учтена</h2>
+                </div>
+                <span id="integrity-badge" class="integrity-badge"></span>
+              </div>
+              <div
+                class="distribution"
+                id="distribution"
+                aria-label="Распределение товара"
+              ></div>
+              <div class="location-stats" id="location-stats"></div>
+            </div>
+            <section class="panel stock-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>
+                    Товары и склады
+                    <span id="stock-count" class="counter"></span>
+                  </h2>
+                  <p>Резерв FBS уже входит в физический остаток.</p>
+                </div>
+                <button class="text-button" data-action="receipt">
+                  <svg class="icon"><use href="#i-down" /></svg>Оформить приход
+                </button>
+              </div>
+              <div class="toolbar">
+                <label class="search"
+                  ><svg class="icon"><use href="#i-search" /></svg
+                  ><input
+                    id="stock-search"
+                    placeholder="Артикул или название товара"
+                    aria-label="Поиск товаров" /></label
+                ><select id="stock-warehouse" aria-label="Фильтр по складу">
+                  <option value="">Все склады</option></select
+                ><span class="toolbar-note">Количество в штуках</span>
+              </div>
+              <div class="table-scroll" id="stock-table"></div>
+              <div class="table-foot">
+                <span
+                  ><span class="legend-dot available"></span> Доступно =
+                  физически − резерв</span
+                ><span id="archive-note"></span>
+              </div>
+            </section>
+            <div class="bottom-grid">
+              <section class="panel">
+                <div class="panel-heading compact">
+                  <h2>Последние операции</h2>
+                  <a href="#history" class="text-link"
+                    >Вся история <span>↗</span></a
+                  >
+                </div>
+                <div id="recent-events"></div>
+              </section>
+              <section class="insight-card">
+                <span class="section-kicker">СПОКОЙНЫЙ УЧЁТ</span
+                ><svg class="insight-icon"><use href="#i-box" /></svg>
+                <h2>Товар меняет место.<br />История остаётся.</h2>
+                <p>
+                  Приход, резерв и каждая отправка связаны с документом.
+                  Повторное подтверждение безопасно.
+                </p>
+                <a href="#documents">Открыть документы <span>→</span></a>
+              </section>
+            </div>
+          </section>
+          <section id="view-documents" class="view" hidden>
+            <div class="panel">
+              <div class="toolbar">
+                <label class="search"
+                  ><svg class="icon"><use href="#i-search" /></svg
+                  ><input
+                    id="document-search"
+                    placeholder="Артикул, товар или номер документа"
+                    aria-label="Поиск документов" /></label
+                ><select id="document-kind" aria-label="Тип документа">
+                  <option value="">Все типы</option>
+                  <option value="TRANSFER">Между ФФ</option>
+                  <option value="FBS">FBS</option>
+                  <option value="FBO">FBO</option>
+                  <option value="RECEIPT">Приход</option></select
+                ><select id="document-status" aria-label="Статус документа">
+                  <option value="pending">В работе</option>
+                  <option value="">Все статусы</option>
+                  <option value="done">Завершённые</option>
+                </select>
+              </div>
+              <div class="table-scroll" id="documents-table"></div>
+              <div class="table-foot">
+                Товар в пути станет доступен на складе только после приёмки.
+              </div>
+            </div>
+          </section>
+          <section id="view-history" class="view" hidden>
+            <div class="panel">
+              <div class="toolbar">
+                <label class="search"
+                  ><svg class="icon"><use href="#i-search" /></svg
+                  ><input
+                    id="history-search"
+                    placeholder="Артикул, товар или название склада"
+                    aria-label="Поиск по истории" /></label
+                ><select id="history-kind" aria-label="Тип операции">
+                  <option value="">Все операции</option>
+                  <option value="RECEIPT">Приход</option>
+                  <option value="TRANSFER">Перемещения</option>
+                  <option value="FBS">FBS</option>
+                  <option value="FBO">FBO</option>
+                  <option value="WAREHOUSE">Склады</option></select
+                ><span class="toolbar-note">Последние 200 событий</span>
+              </div>
+              <div class="table-scroll" id="history-table"></div>
+              <div class="table-foot">
+                Названия в истории сохранены на момент операции. Записи нельзя
+                изменить.
+              </div>
+            </div>
+          </section>
+          <section id="view-warehouses" class="view" hidden>
+            <div class="warehouse-intro">
+              <svg class="icon"><use href="#i-warehouse" /></svg>
+              <p>
+                Удалённый ФФ уходит в архив. Его товар и история остаются видны;
+                остаток можно вывезти на действующий склад.
+              </p>
+            </div>
+            <div id="warehouse-cards" class="warehouse-grid"></div>
+          </section>
+        </div>
+        <footer class="page-footer">
+          <span
+            >CHECKSTOCK <span class="footer-separator">/</span> Прозрачный
+            складской учёт</span
+          ><span>От цифр — к ясности.</span>
+        </footer>
+      </div>
+    </main>
+    <dialog id="operation-dialog" class="drawer" aria-labelledby="drawer-title">
+      <form id="operation-form">
+        <div class="drawer-header">
+          <div>
+            <span class="eyebrow">ДВИЖЕНИЕ ТОВАРА</span>
+            <h2 id="drawer-title">Новая операция</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button"
+            id="close-drawer"
+            aria-label="Закрыть форму"
+          >
+            <svg class="icon"><use href="#i-close" /></svg>
+          </button>
+        </div>
+        <div class="drawer-content">
+          <label class="field" id="kind-field"
+            >Тип операции<select name="kind" id="operation-kind">
+              <option value="receipt">Приход на ФФ</option>
+              <option value="reserve">Резерв FBS</option>
+              <option value="transfer">Перемещение между ФФ</option>
+              <option value="fbo">Отправка FBO</option>
+            </select></label
+          >
+          <div id="operation-fields"></div>
+          <div
+            id="operation-preview"
+            class="operation-preview"
+            aria-live="polite"
+          ></div>
+          <div id="form-error" class="form-error" role="alert" hidden></div>
+        </div>
+        <div class="drawer-footer">
+          <button type="button" class="button secondary" id="cancel-drawer">
+            Отмена</button
+          ><button type="submit" class="button primary" id="submit-operation">
+            Подтвердить
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog
+      id="confirm-dialog"
+      class="confirm-dialog"
+      aria-labelledby="confirm-title"
+    >
+      <form id="confirm-form">
+        <span class="confirm-icon"
+          ><svg class="icon"><use href="#i-check" /></svg
+        ></span>
+        <h2 id="confirm-title"></h2>
+        <p id="confirm-description"></p>
+        <div id="confirm-error" class="form-error" role="alert" hidden></div>
+        <div class="confirm-actions">
+          <button type="button" class="button secondary" id="cancel-confirm">
+            Отмена</button
+          ><button type="submit" class="button primary" id="confirm-submit">
+            Подтвердить
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>
