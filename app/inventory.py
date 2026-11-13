@@ -1,5 +1,3 @@
-"""All inventory writes. The caller owns the transaction; no hidden commits."""
-
 import hashlib
 import json
 
@@ -52,9 +50,6 @@ class Inventory:
         self.db, self.store_id = session, store_id
 
     def execute(self, key, action, payload, command):
-        # One short write transaction per store. This deliberately serializes the demo's
-        # writes, including warehouse archival, missing balance rows and idempotency.
-        # Reads remain MVCC/non-blocking. No network I/O is allowed under this lock.
         store = self.db.scalar(
             select(Store).where(Store.id == self.store_id).with_for_update()
         )
