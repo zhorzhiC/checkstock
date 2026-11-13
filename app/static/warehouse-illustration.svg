@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" fill="none">
+  <g stroke="#d1d4d9" stroke-width="1.2">
+    <path d="m32 176 171 31 166-31-171-31Z" fill="#f4f5f7"/>
+    <path d="m59 181 167-31m-111 41 167-31m-111 41 167-31M86 166l172 31m-117-41 173 31"/>
+  </g>
+  <g stroke="#16191c" stroke-width="1.6" stroke-linejoin="round">
+    <path d="M105 82v88l94 17 96-18V80l-94-39Z" fill="#f9fafb"/>
+    <path d="m91 86 109-47 110 45-15 8-95-37-94 39Z" fill="#e6e8eb"/>
+    <path d="M200 55v132m-94-93 94-39 95 37"/>
+    <path d="m119 102 65-27v92l-65-12Z" fill="#f4f5f7"/>
+    <path d="m121 121 62-16m-62 35 62-5m-39-42v67"/>
+    <path d="m127 108 12-4v13l-12 3Zm24-10 23-9v16l-23 6Zm-23 28 11-2v12l-11 1Zm24-5 23-5v16l-23 2Zm-25 18 12-1v12l-12-2Zm24-3 23-1v20l-23-5Z" fill="#e6e8eb"/>
+    <path d="m221 105 51 9v53l-51 10Z" fill="#e6e8eb"/>
+    <path d="m221 105 25-5 26 14-25 5Z" fill="#f9fafb"/>
+    <path d="M247 119v53m-26-34 51-1"/>
+    <path d="m233 108 26 6m-26 40 9-1m16-2 8-2" stroke="#7b8187"/>
+  </g>
+  <path d="M295 130h37c24 0 27-28 10-36" stroke="#1d52de" stroke-width="1.6" stroke-dasharray="4 5"/>
+  <path d="m339 91 3 5 5-2" stroke="#1d52de" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="rotate(9 323 63)">
+    <rect x="296" y="29" width="52" height="66" rx="6" fill="#f9fafb" stroke="#16191c" stroke-width="1.5"/>
+    <path d="M307 43h13m-13 8h29m-29 7h19" stroke="#d1d4d9" stroke-width="2" stroke-linecap="round"/>
+    <rect x="308" y="69" width="25" height="14" rx="3" fill="#1d52de"/>
+    <path d="m315 76 3 3 7-7" stroke="#f9fafb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g stroke="#16191c" stroke-width="1.5" stroke-linejoin="round">
+    <path d="m65 151 27-10 29 15-28 11Z" fill="#e6e8eb"/>
+    <path d="m65 151 28 16v30l-28-16Z" fill="#f9fafb"/>
+    <path d="m93 167 28-11v30l-28 11Z" fill="#1d52de"/>
+    <path d="m79 146 29 16v11l-7 3v-11l-29-16" fill="#d1d4d9"/>
+    <path d="m72 171 11 6m-11-1 7 4" stroke="#7b8187"/>
+  </g>
+  <g stroke="#7b8187" stroke-width="1.2" stroke-linecap="round">
+    <path d="M58 67h11m-5-5v11m202-47h8m-4-4v8M349 180h9m-4-4v8"/>
+  </g>
+</svg>

@@ -38,30 +38,10 @@ const actionLabels = {
   WAREHOUSE_ARCHIVED: "ФФ отправлен в архив",
 };
 const pages = {
-  stock: [
-    "ТОЧНОСТЬ В КАЖДОЙ ЕДИНИЦЕ",
-    "Остатки под контролем",
-    "Где товар, сколько свободно и что уже отправлено.",
-    "Остатки",
-  ],
-  documents: [
-    "ОТ СКЛАДА ДО КЛИЕНТА",
-    "Товар в движении",
-    "Отправляйте, принимайте и завершайте заказы.",
-    "Отправки и перемещения",
-  ],
-  history: [
-    "ПРОЗРАЧНОСТЬ В КАЖДОМ ДЕЙСТВИИ",
-    "История без пробелов",
-    "Что, сколько, откуда и куда. Сохраняем каждый шаг.",
-    "История",
-  ],
-  warehouses: [
-    "ПОРЯДОК НА КАЖДОМ СКЛАДЕ",
-    "Ваши фулфилменты",
-    "Действующие склады и архив с сохранёнными остатками.",
-    "Склады",
-  ],
+  stock: "Остатки",
+  documents: "Отправки и перемещения",
+  history: "История",
+  warehouses: "Склады",
 };
 let data,
   currentView = "stock",
@@ -79,8 +59,8 @@ const time = (value, full = false) =>
       ? { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }
       : { hour: "2-digit", minute: "2-digit" },
   );
-const empty = (title, description) =>
-  `<div class="empty-state">${icon("box")}<strong>${esc(title)}</strong><p>${esc(description)}</p></div>`;
+const empty = (title) =>
+  `<div class="empty-state">${icon("box")}<strong>${esc(title)}</strong></div>`;
 
 async function api(path, { method = "GET", body, key } = {}) {
   const controller = new AbortController();
@@ -112,7 +92,7 @@ async function api(path, { method = "GET", body, key } = {}) {
       throw error;
     throw {
       message:
-        "Связь прервалась. Повторите действие: тот же запрос не спишет товар дважды.",
+        "Нет связи. Повторите запрос.",
     };
   } finally {
     clearTimeout(timer);
@@ -126,7 +106,7 @@ async function loadState() {
     if (!next.store)
       throw {
         message:
-          "Демонстрационные данные не созданы. Выполните запуск по README.",
+          "Магазин не настроен.",
       };
     data = next;
     $("#loading").hidden = true;
@@ -177,7 +157,7 @@ function render() {
           return `<div class="event-row"><span class="event-symbol">${icon(event.action.includes("SENT") || event.action.includes("SHIPPED") ? "arrow" : "down")}</span><div class="event-text"><strong>${esc(actionLabels[event.action])}</strong><small>${esc(p?.sku || "Склады")} · ${esc(event.source || "—")} → ${esc(event.destination || "Архив")}</small></div><span class="event-quantity">${event.quantity ? `${num(event.quantity)} шт.` : ""}</span><span class="event-time">${time(event.created_at)}</span></div>`;
         })
         .join("")
-    : empty("Здесь будет история", "Оформите первую операцию.");
+    : empty("Нет операций");
 }
 
 function renderMetrics() {
@@ -189,22 +169,21 @@ function renderMetrics() {
       s.physical,
       "box",
       s.archived_physical
-        ? `${num(s.archived_physical)} шт. на архивных складах`
-        : "На всех фулфилментах",
+        ? `В архиве: ${num(s.archived_physical)} шт.`
+        : "",
     ],
     [
       "Доступно к отправке",
       s.available_active,
       "check",
-      "Свободно на действующих ФФ",
     ],
-    ["В резерве FBS", s.reserved, "clock", "Заблокировано до отправки"],
-    ["Всего в пути", transit, "truck", "Между ФФ, в FBO и к клиенту"],
+    ["В резерве FBS", s.reserved, "clock"],
+    ["В пути", transit, "truck"],
   ];
   $("#metrics").innerHTML = metrics
     .map(
       ([label, value, symbol, caption]) =>
-        `<article class="metric"><div class="metric-top">${label}${icon(symbol)}</div><div class="metric-value">${num(value)}<small>шт.</small></div><div class="metric-caption">${caption}</div></article>`,
+        `<article class="metric"><div class="metric-top">${label}${icon(symbol)}</div><div class="metric-value">${num(value)}<small>шт.</small></div>${caption ? `<div class="metric-caption">${caption}</div>` : ""}</article>`,
     )
     .join("");
   $("#integrity-badge").classList.toggle("bad", !data.integrity.ok);
@@ -247,13 +226,11 @@ function renderStocks() {
   );
   $("#stock-count").textContent = `${rows.length} SKU`;
   $("#archive-note").textContent = data.summary.archived_physical
-    ? `В архиве ${num(data.summary.archived_physical)} шт. — доступны для вывоза`
-    : "Без двойного учёта";
+    ? `В архиве: ${num(data.summary.archived_physical)} шт.`
+    : "";
+  $("#archive-note").hidden = !data.summary.archived_physical;
   if (!rows.length) {
-    $("#stock-table").innerHTML = empty(
-      "Товаров не найдено",
-      "Измените запрос или очистите поиск.",
-    );
+    $("#stock-table").innerHTML = empty("Товары не найдены");
     return;
   }
   $("#stock-table").innerHTML =
@@ -286,10 +263,7 @@ function renderDocuments() {
     );
   });
   if (!docs.length) {
-    $("#documents-table").innerHTML = empty(
-      "Документов пока нет",
-      "Оформите операцию или измените фильтры.",
-    );
+    $("#documents-table").innerHTML = empty("Нет документов");
     return;
   }
   $("#documents-table").innerHTML =
@@ -327,7 +301,7 @@ function renderHistory() {
           return `<tr><td>${time(e.created_at, true)}<span class="doc-id">${e.document_id ? "#" + e.document_id.slice(0, 8) : "Справочник"}</span></td><td>${esc(actionLabels[e.action] || e.action)}</td><td class="document-product">${esc(p?.name || "—")}<small>${esc(p?.sku || "")}</small></td><td class="route">${esc(e.source || "—")}<span>→</span>${esc(e.destination || "Архив")}</td><td class="number">${e.quantity ? num(e.quantity) : "—"}</td></tr>`;
         })
         .join("")}</tbody></table>`
-    : empty("Событий не найдено", "Попробуйте изменить фильтры.");
+    : empty("Нет событий");
 }
 
 function renderWarehouses() {
@@ -347,28 +321,39 @@ function renderWarehouses() {
             ["RESERVED", "IN_TRANSIT"].includes(d.status) &&
             [d.source_id, d.destination_id].includes(w.id),
         ).length;
-        return `<article class="warehouse-card ${w.archived ? "archived" : ""}"><div class="warehouse-card-top"><span class="warehouse-symbol">${icon("warehouse")}</span><span class="badge ${w.archived ? "CANCELLED" : "RECEIVED"}">${w.archived ? "Архив" : "Действующий"}</span></div><h2>${esc(w.name)}</h2><p>${w.archived ? "Остатки и история сохранены" : "Фулфилмент · Демо-магазин"}</p><div class="warehouse-card-stats"><div><b>${num(physical)}</b><small>физически, шт.</small></div><div><b>${num(reserved)}</b><small>резерв FBS, шт.</small></div></div>${pending ? `<div class="pending-inline">${pending} незавершённых документов</div>` : ""}<div class="warehouse-card-actions"><button data-rename="${w.id}">Переименовать</button>${w.archived ? `<button data-evacuate="${w.id}">Вывезти товар →</button>` : `<button data-archive="${w.id}">Удалить ФФ</button>`}</div></article>`;
+        return `<article class="warehouse-card ${w.archived ? "archived" : ""}"><div class="warehouse-card-top"><span class="warehouse-symbol">${icon("warehouse")}</span><span class="badge ${w.archived ? "CANCELLED" : "RECEIVED"}">${w.archived ? "Архив" : "Действующий"}</span></div><h2>${esc(w.name)}</h2><div class="warehouse-card-stats"><div><b>${num(physical)}</b><small>физически, шт.</small></div><div><b>${num(reserved)}</b><small>резерв FBS, шт.</small></div></div>${pending ? `<div class="pending-inline">В работе: ${pending}</div>` : ""}<div class="warehouse-card-actions"><button data-rename="${w.id}">Переименовать</button>${w.archived ? `<button data-evacuate="${w.id}">Вывезти товар →</button>` : `<button data-archive="${w.id}">В архив</button>`}</div></article>`;
       })
       .join("") +
-    `<button class="new-warehouse" id="add-warehouse">${icon("plus")}Добавить фулфилмент</button>`;
+    `<button class="new-warehouse" id="add-warehouse">${icon("plus")}Добавить склад</button>`;
 }
 
 function setView() {
+  const previousView = currentView;
   currentView = location.hash.slice(1);
   if (!pages[currentView]) currentView = "stock";
-  const [eyebrow, title, description, crumb] = pages[currentView];
-  $("#page-eyebrow").textContent = eyebrow;
-  $("#page-title").innerHTML = `${esc(title)}<span>.</span>`;
-  $("#page-description").textContent = description;
-  $("#breadcrumb-current").textContent = crumb;
+  const title = pages[currentView];
+  $("#page-title").textContent = title;
+  document.title = `${title} — CheckStock`;
   document
     .querySelectorAll(".view")
     .forEach((el) => (el.hidden = el.id !== `view-${currentView}`));
   document
     .querySelectorAll(".nav-item")
-    .forEach((el) =>
-      el.classList.toggle("active", el.dataset.view === currentView),
-    );
+    .forEach((el) => {
+      const active = el.dataset.view === currentView;
+      el.classList.toggle("active", active);
+      if (active) el.setAttribute("aria-current", "page");
+      else el.removeAttribute("aria-current");
+    });
+  if (previousView !== currentView) window.scrollTo({ top: 0 });
+}
+
+function focusStockSearch() {
+  if (!data || document.querySelector("dialog[open]")) return;
+  location.hash = "stock";
+  setView();
+  $("#stock-search").focus({ preventScroll: true });
+  $("#stock-search").scrollIntoView({ block: "center" });
 }
 
 function options(list, chosen) {
@@ -398,17 +383,14 @@ function buildFields(values = {}) {
     reserve: "Резерв FBS",
     transfer: "Перемещение между ФФ",
     fbo: "Отправка FBO",
-    createWarehouse: "Новый фулфилмент",
+    createWarehouse: "Новый склад",
     renameWarehouse: "Название склада",
   };
   $("#drawer-title").textContent = titles[mode];
+  $("#operation-preview").hidden = ["createWarehouse", "renameWarehouse"].includes(mode);
   if (["createWarehouse", "renameWarehouse"].includes(mode)) {
     $("#operation-fields").innerHTML =
-      `<label class="field">Название ФФ<input name="name" required maxlength="80" autocomplete="off" value="${esc(values.name || "")}" placeholder="Например, Запад"><span class="field-hint">Название должно быть уникальным, включая архивные склады.</span></label><input type="hidden" name="warehouse_id" value="${esc(values.warehouse_id || "")}">`;
-    $("#operation-preview").textContent =
-      mode === "renameWarehouse"
-        ? "История сохранит название склада на момент каждой операции."
-        : "На новом складе остатки будут нулевыми. Оформите приход или перемещение.";
+      `<label class="field">Название<input name="name" required maxlength="80" autocomplete="off" value="${esc(values.name || "")}"><span class="field-hint">Название должно быть уникальным.</span></label><input type="hidden" name="warehouse_id" value="${esc(values.warehouse_id || "")}">`;
     $("#submit-operation").textContent = "Сохранить";
     return;
   }
@@ -421,7 +403,7 @@ function buildFields(values = {}) {
     active.find((w) => w.id !== selectedSource)?.id ||
     active[0]?.id;
   $("#operation-fields").innerHTML =
-    `<label class="field">Товар<select name="product_id" required>${data.products.map((p) => `<option value="${p.id}" ${p.id === values.product_id ? "selected" : ""}>${esc(p.sku)} · ${esc(p.name)}</option>`).join("")}</select></label><label class="field">${mode === "receipt" ? "Склад приёмки" : "Склад отправления"}<select name="${mode === "transfer" ? "source_id" : "warehouse_id"}" required>${options(source, selectedSource)}</select></label>${mode === "transfer" ? `<label class="field">Склад приёмки<select name="destination_id" required>${options(active, selectedDestination)}</select><span class="field-hint">Товар будет в пути до подтверждения приёмки.</span></label>` : ""}${mode === "fbo" ? '<label class="field">Куда отправляем<input name="destination" value="Склад маркетплейса" required maxlength="80"></label>' : ""}<label class="field">Количество, шт.<input type="number" name="quantity" value="${values.quantity || 1}" min="1" max="1000000" step="1" required inputmode="numeric"></label>`;
+    `<label class="field">Товар<select name="product_id" required>${data.products.map((p) => `<option value="${p.id}" ${p.id === values.product_id ? "selected" : ""}>${esc(p.sku)} · ${esc(p.name)}</option>`).join("")}</select></label><label class="field">${mode === "receipt" ? "Склад приёмки" : "Склад отправления"}<select name="${mode === "transfer" ? "source_id" : "warehouse_id"}" required>${options(source, selectedSource)}</select></label>${mode === "transfer" ? `<label class="field">Склад приёмки<select name="destination_id" required>${options(active, selectedDestination)}</select><span class="field-hint">Доступно после приёмки.</span></label>` : ""}${mode === "fbo" ? '<label class="field">Склад приёмки<input name="destination" value="Склад маркетплейса" required maxlength="80"></label>' : ""}<label class="field">Количество, шт.<input type="number" name="quantity" value="${values.quantity || 1}" min="1" max="1000000" step="1" required inputmode="numeric"></label>`;
   $("#submit-operation").textContent = {
     receipt: "Оформить приход",
     reserve: "Зарезервировать",
@@ -441,22 +423,22 @@ function preview() {
   const qty = Number(f.get("quantity"));
   if (!stock || !w || !Number.isInteger(qty) || qty <= 0) {
     $("#operation-preview").textContent =
-      "Заполните поля для предварительного расчёта.";
+      "Укажите товар, склад и количество.";
     return;
   }
   let result = "";
   if (mode === "receipt")
     result = `Физически: ${num(stock.physical)} → ${num(stock.physical + qty)} шт.<br>Доступно: ${num(stock.available)} → ${num(stock.available + qty)} шт.`;
   if (mode === "reserve")
-    result = `Физически останется ${num(stock.physical)} шт.<br>Резерв: ${num(stock.reserved)} → ${num(stock.reserved + qty)} шт.<br>Доступно: ${num(stock.available)} → ${num(stock.available - qty)} шт.`;
+    result = `Резерв: ${num(stock.reserved)} → ${num(stock.reserved + qty)} шт.<br>Доступно: ${num(stock.available)} → ${num(stock.available - qty)} шт.`;
   if (mode === "transfer" || mode === "fbo")
     result = `На ФФ: ${num(stock.physical)} → ${num(stock.physical - qty)} шт.<br>В пути ${mode === "transfer" ? "между ФФ" : "на маркетплейс"}: +${num(qty)} шт.`;
   const warning =
     mode !== "receipt" && qty > stock.available
-      ? '<br><span style="color:#ae8144">На этом ФФ недостаточно свободного товара.</span>'
+      ? '<br><span class="preview-warning">Недостаточно товара.</span>'
       : "";
   $("#operation-preview").innerHTML =
-    `<strong>После подтверждения · ${esc(w.name)}</strong>${result}${warning}`;
+    `<strong>После операции</strong>${result}${warning}`;
 }
 
 async function submitOperation(event) {
@@ -508,20 +490,20 @@ async function submitOperation(event) {
     await loadState();
     toast(
       result.replayed
-        ? "Операция уже подтверждена. Остатки не изменились."
-        : "Готово. Остатки и история обновлены.",
+        ? "Уже выполнено"
+        : "Операция выполнена",
     );
   } catch (error) {
     const box = $("#form-error");
     box.hidden = false;
     box.innerHTML = `<p>${esc(error.message)}</p>`;
     if (error.code === "insufficient_stock") {
-      box.innerHTML += `Не хватает ${num(error.shortage)} шт. ${error.alternatives?.length ? "Можно пополнить выбранный ФФ:" : "На других ФФ свободного товара нет."}`;
+      box.innerHTML += `Не хватает ${num(error.shortage)} шт. ${error.alternatives?.length ? "" : "На других складах нет свободного товара."}`;
       (error.alternatives || []).forEach((alt, index) => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "suggestion";
-        button.textContent = `Переместить ${num(alt.quantity)} шт. с ФФ «${alt.name}»${alt.archived ? " (архив)" : ""} →`;
+        button.textContent = `Переместить ${num(alt.quantity)} шт. из «${alt.name}»${alt.archived ? " (архив)" : ""}`;
         button.addEventListener("click", () => {
           const original = body.warehouse_id || body.source_id;
           mode = "transfer";
@@ -587,8 +569,8 @@ document.addEventListener("click", (event) => {
     const w = warehouse(el.dataset.archive),
       qty = data.stocks.reduce((n, p) => n + p.warehouses[w.id].physical, 0);
     confirmAction(
-      `Удалить ФФ «${w.name}»?`,
-      `Склад перейдёт в архив. ${num(qty)} шт. останутся числиться на нём, история сохранится.\nМожно будет вывезти товар и завершить начатые операции.`,
+      `Архивировать склад «${w.name}»?`,
+      `${num(qty)} шт. останутся на складе. Вывоз и завершение операций будут доступны.`,
       `/api/v1/warehouses/${w.id}`,
       "DELETE",
     );
@@ -603,7 +585,7 @@ document.addEventListener("click", (event) => {
     }[action];
     let description = `${product(d.product_id).sku} · ${product(d.product_id).name}\n${num(d.quantity)} шт. · ${d.source_name} → ${d.destination_name}`;
     if (d.status === "RECEIVED")
-      description += "\nДокумент уже принят. Повтор не изменит остатки.";
+      description += "\nУже принято. Остатки не изменятся.";
     const group = {
       TRANSFER: "transfers",
       FBO: "fbo-shipments",
@@ -624,8 +606,8 @@ $("#confirm-form").addEventListener("submit", async (event) => {
     await loadState();
     toast(
       result.replayed
-        ? "Уже подтверждено. Повторного списания нет."
-        : "Готово. Учёт обновлён.",
+        ? "Уже выполнено"
+        : "Операция выполнена",
     );
   } catch (error) {
     $("#confirm-error").hidden = false;
@@ -654,6 +636,21 @@ $("#cancel-drawer").addEventListener("click", () =>
   $("#operation-dialog").close(),
 );
 $("#new-operation").addEventListener("click", () => openOperation("receipt"));
+$("#quick-search").addEventListener("click", focusStockSearch);
+$(".skip-link").addEventListener("click", (event) => {
+  event.preventDefault();
+  $("#main-content").focus();
+});
+document.addEventListener("keydown", (event) => {
+  if (
+    (event.ctrlKey || event.metaKey) &&
+    event.key.toLowerCase() === "k" &&
+    !document.querySelector("dialog[open]")
+  ) {
+    event.preventDefault();
+    focusStockSearch();
+  }
+});
 $("#refresh").addEventListener("click", loadState);
 ["stock-search", "stock-warehouse"].forEach((id) =>
   $("#" + id).addEventListener("input", renderStocks),

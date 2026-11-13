@@ -18,6 +18,9 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://checkstock:${POSTGRES_PASSWORD:-checkstock-local-only}@db:5432/checkstock
       DEMO_SEED: ${DEMO_SEED:-true}
+    volumes:
+      - ./app/static:/app/app/static:ro
+      - ./app/templates:/app/app/templates:ro
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
     depends_on:
